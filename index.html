@@ -41,7 +41,9 @@ main{padding-bottom:32px}
 .chart-panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:15px;margin:14px 0 20px}
 .chart-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}.chart-head h3{font-size:1rem;margin:0}
 .chart-toggle{display:flex;gap:3px;background:#eaf3f2;padding:3px;border-radius:9px}.chart-toggle button{font-size:.78rem;padding:6px 10px;background:transparent;color:var(--muted)}.chart-toggle button.selected{background:white;color:var(--accent-dark)}
-.chart-svg{display:block;width:100%;height:auto;touch-action:manipulation}.chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}.chart-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}.chart-detail{min-height:24px;font-size:.8rem;color:var(--accent-dark);margin-top:9px}.chart-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.chart-nav button{background:#eaf3f2;color:var(--accent-dark);padding:5px 10px}.chart-nav span{font-size:.82rem;font-weight:650}
+.chart-svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+/* グラフの透明な操作領域にブラウザ既定の太いフォーカス枠を表示しない。キーボード操作時は細い選択線で位置を示す。 */
+#chartTouchArea:focus,#chartTouchArea:focus-visible{outline:none;stroke:none}.chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}.chart-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}.chart-detail{font-size:.8rem;color:var(--accent-dark);margin-top:4px}.chart-detail:empty{display:none}.chart-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.chart-nav button{background:#eaf3f2;color:var(--accent-dark);padding:5px 10px}.chart-nav span{font-size:.82rem;font-weight:650}
 .yesterday-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;margin:10px 0;background:#e5f5f2;color:#167f78;padding:13px;border-radius:12px}.yesterday-list{background:white;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}.yesterday-item{display:flex;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid #eff3f2}.yesterday-item:last-child{border-bottom:0}.yesterday-item input{width:21px;height:21px;accent-color:#39c5bb}.yesterday-item .taskbody{flex:1}.yesterday-item small{color:var(--muted)}
 
 .memo-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}.memo-item:last-child{border:0}.memo-check{display:flex;align-items:center;gap:10px;flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}.memo-check input{accent-color:var(--accent);width:19px;height:19px;flex-shrink:0}.memo-actions{display:flex;gap:5px}.voice-field{position:relative;display:flex;align-items:stretch}.voice-field input,.voice-field textarea{padding-right:53px;width:100%}.voice-btn{position:absolute;right:4px;top:4px;min-width:39px;height:calc(100% - 8px);max-height:42px;background:var(--accent-pale);color:var(--accent-dark);font-size:19px}.voice-btn.listening{background:#d7f4ee;outline:2px solid var(--accent-dark)}textarea{font:inherit;width:100%;border:1px solid #CBD8D7;border-radius:9px;padding:11px 12px;resize:vertical}
@@ -49,6 +51,9 @@ main{padding-bottom:32px}
 /* Long-press ordering: grab the card body; controls remain independent. */
 .sortable-task,.child-row[data-sort-child]{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 @media(prefers-reduced-motion:no-preference){.sortable-task,.child-row[data-sort-child]{transition:background .12s ease}}
+/* Fixed visual footprint for the three navigation SVGs. */
+.nav-icon{width:38px;height:38px;display:grid;place-items:center;line-height:1}
+.nav-icon svg{width:36px;height:36px;display:block}
 </style>
 </head>
 <body>
@@ -66,11 +71,11 @@ main{padding-bottom:32px}
   <div class="type-switch" role="group" aria-label="タスク分類"><button id="spotTab" class="selected" type="button">スポット <span class="tab-count" id="spotCount">0</span></button><button id="routineTab" type="button">ルーティン <span class="tab-count" id="routineCount">0</span></button></div><div id="openTasks"></div><div id="yesterdayRoutine"></div>
 </section>
 <section id="settingsScreen" class="screen"><h2>設定</h2>
-  <section class="memo-section"><div class="task-heading"><h2>改善メモ</h2><button class="secondary" id="addMemo" type="button">＋ 追加</button></div><div class="type-switch" role="group" aria-label="改善メモの状態"><button type="button" id="memoOpen" class="selected">未対応</button><button type="button" id="memoDone">対応済み</button></div><div id="memoList" class="panel"></div></section><section><h2>繰り返し管理</h2><div id="templateList" class="panel"></div></section><section class="backup"><h2>バックアップ</h2><div class="panel"><p class="hint">データはこのブラウザ内に保存されます。端末の故障やブラウザのデータ消去に備えて、定期的に保存してください。別端末には自動同期されません。</p><div class="toolbar"><button class="secondary" id="exportBtn" type="button">書き出す</button><button class="secondary" id="importBtn" type="button">読み込む</button><input class="hidden" id="importFile" type="file" accept=".json,application/json"></div></div></section>
+  <section class="memo-section"><div class="task-heading"><h2>改善メモ</h2><button class="secondary" id="addMemo" type="button">＋ 追加</button></div><div class="type-switch" role="group" aria-label="改善メモの状態"><button type="button" id="memoOpen" class="selected">未対応</button><button type="button" id="memoDone">対応済み</button></div><div id="memoList" class="panel"></div></section><section><div class="task-heading"><h2>繰り返し管理</h2><button class="secondary" id="addTemplate" type="button">＋ 追加</button></div><div id="templateList" class="panel"></div></section><section class="backup"><h2>バックアップ</h2><div class="panel"><p class="hint">データはこのブラウザ内に保存されます。端末の故障やブラウザのデータ消去に備えて、定期的に保存してください。別端末には自動同期されません。</p><div class="toolbar"><button class="secondary" id="exportBtn" type="button">書き出す</button><button class="secondary" id="importBtn" type="button">読み込む</button><input class="hidden" id="importFile" type="file" accept=".json,application/json"></div></div></section>
   <footer>Daily Quest</footer>
 </section>
-<section id="historyScreen" class="screen"><h2>履歴</h2><div class="history-achievement"><div class="history-achievement-label">累計実績</div><div class="history-achievement-value"><strong id="achievementTotal">0</strong><span>pt</span></div></div><div class="chart-panel"><div class="chart-head"><h3>実績グラフ</h3><div class="chart-toggle"><button id="chartWeek" type="button">7日間</button><button id="chartMonth" type="button" class="selected">月単位</button></div></div><div class="chart-nav"><button id="chartPrev" type="button" aria-label="前の期間">‹</button><span id="chartPeriod"></span><button id="chartNext" type="button" aria-label="次の期間">›</button></div><div id="achievementChart"></div><div class="chart-legend"><span><i class="chart-dot" style="background:#39c5bb"></i>ルーティン</span><span><i class="chart-dot" style="background:#a1d7ee"></i>スポット</span></div><div id="chartDetail" class="chart-detail" aria-live="polite">グラフの日付をタップすると内訳を表示</div></div><h2>完了履歴</h2><div id="historyGroups"></div></section>
-<nav class="bottom-nav" aria-label="画面切り替え"><button type="button" class="nav-btn active" data-screen="mainScreen" aria-current="page"><span class="nav-icon">☑</span><span>タスク</span></button><button type="button" class="nav-btn" data-screen="historyScreen"><span class="nav-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span><span>履歴</span></button><button type="button" class="nav-btn" data-screen="settingsScreen"><span class="nav-icon">⚙</span><span>設定</span></button></nav>
+<section id="historyScreen" class="screen"><h2>履歴</h2><div class="history-achievement"><div class="history-achievement-label">累計実績</div><div class="history-achievement-value"><strong id="achievementTotal">0</strong><span>pt</span></div></div><div class="chart-panel"><div class="chart-head"><h3>実績グラフ</h3><div class="chart-toggle"><button id="chartWeek" type="button">7日間</button><button id="chartMonth" type="button" class="selected">月単位</button></div></div><div class="chart-nav"><button id="chartPrev" type="button" aria-label="前の期間">‹</button><span id="chartPeriod"></span><button id="chartNext" type="button" aria-label="次の期間">›</button></div><div class="chart-legend"><span><i class="chart-dot" style="background:#39c5bb"></i>ルーティン</span><span><i class="chart-dot" style="background:#88C9F7"></i>スポット</span></div><div id="achievementChart"></div><div id="chartDetail" class="chart-detail" aria-live="polite"></div></div><h2>完了履歴</h2><div id="historyGroups"></div></section>
+<nav class="bottom-nav" aria-label="画面切り替え"><button type="button" class="nav-btn active" data-screen="mainScreen" aria-current="page"><span class="nav-icon"><svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="28" height="28" rx="4"/><path d="M10.5 18 L16 23.5 L26 12.5"/></svg></span><span>タスク</span></button><button type="button" class="nav-btn" data-screen="historyScreen"><span class="nav-icon"><svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="14"/><path d="M18 9 V18 L24 22"/></svg></span><span>履歴</span></button><button type="button" class="nav-btn" data-screen="settingsScreen"><span class="nav-icon"><svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3.5 H21 L22.2 7.5 L25.4 9.3 L29.5 8.4 L32.5 13.6 L29.5 16.6 V19.4 L32.5 22.4 L29.5 27.6 L25.4 26.7 L22.2 28.5 L21 32.5 H15 L13.8 28.5 L10.6 26.7 L6.5 27.6 L3.5 22.4 L6.5 19.4 V16.6 L3.5 13.6 L6.5 8.4 L10.6 9.3 L13.8 7.5 Z"/><circle cx="18" cy="18" r="5.2"/></svg></span><span>設定</span></button></nav>
 </main>
 <div id="modalRoot"></div><div id="toast" class="toast hidden" role="status"></div>
 <script>
@@ -186,9 +191,10 @@ function switchScreen(id){
 }
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchScreen(b.dataset.screen)));
 let addTaskOpener=null;
-function openAddTask(){addTaskOpener=document.activeElement;resetForm();$('addTaskOverlay').classList.remove('hidden');$('taskName').focus();}
+function openAddTask(defaultRepeat=null){addTaskOpener=document.activeElement;resetForm();if(defaultRepeat){$('repeatMode').value=defaultRepeat;$('repeatMode').dispatchEvent(new Event('change'));}const overlay=$('addTaskOverlay');if(overlay.parentNode!==document.body)document.body.appendChild(overlay);overlay.classList.remove('hidden');$('taskName').focus();}
 function closeAddTask(){$('addTaskOverlay').classList.add('hidden');if(addTaskOpener&&addTaskOpener.isConnected)addTaskOpener.focus();}
-$('openAddTask').addEventListener('click',openAddTask);
+$('openAddTask').addEventListener('click',()=>openAddTask());
+$('addTemplate').addEventListener('click',()=>openAddTask('daily'));
 $('cancelAddTask').addEventListener('click',closeAddTask);
 $('addTaskOverlay').addEventListener('click',e=>{if(e.target===$('addTaskOverlay'))closeAddTask();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('addTaskOverlay').classList.contains('hidden'))closeAddTask();});
@@ -225,15 +231,36 @@ function renderChart(){
  const totals=chartDailyTotals(),data=dates.map(d=>{const key=dateKey(d),v=totals.get(key)||{routine:0,spot:0};return {key,...v,total:v.routine+v.spot};});
  const max=Math.max(5,...data.map(d=>d.total)),ceiling=Math.ceil(max/5)*5,w=360,h=205,l=34,r=10,t=10,b=30,plotW=w-l-r,plotH=h-t-b;
  const x=i=>l+plotW*(i+.5)/data.length,y=v=>t+plotH*(1-v/ceiling);
- const path=(values)=>{let d=`M ${x(0).toFixed(2)} ${y(values[0]).toFixed(2)}`;for(let i=1;i<values.length;i++){const mid=(x(i-1)+x(i))/2;d+=` H ${mid.toFixed(2)} V ${y(values[i]).toFixed(2)} H ${x(i).toFixed(2)}`;}return d;};
+ const path=values=>{let d=`M ${x(0).toFixed(2)} ${y(values[0]).toFixed(2)}`;for(let i=1;i<values.length;i++){d+=` L ${x(i).toFixed(2)} ${y(values[i]).toFixed(2)}`;}return d;};
  const lower=data.map(d=>d.routine),upper=data.map(d=>d.total),baseline=data.map(()=>0);
  const area=(upperVals,lowerVals)=>path(upperVals)+' '+Array.from({length:lowerVals.length},(_,j)=>lowerVals.length-1-j).map(i=>`L ${x(i).toFixed(2)} ${y(lowerVals[i]).toFixed(2)}`).join(' ')+' Z';
  const grid=[0,.25,.5,.75,1].map(v=>`<line x1="${l}" x2="${w-r}" y1="${y(ceiling*v)}" y2="${y(ceiling*v)}" stroke="#e6efee"/><text x="${l-5}" y="${y(ceiling*v)+4}" font-size="10" text-anchor="end" fill="#738885">${Math.round(ceiling*v)}</text>`).join('');
  const step=Math.max(1,Math.ceil(data.length/6));const labels=data.map((d,i)=>i%step===0||i===data.length-1?`<text x="${x(i)}" y="${h-8}" font-size="10" text-anchor="middle" fill="#738885">${Number(d.key.slice(8))}</text>`:'').join('');
- const hits=data.map((d,i)=>`<rect x="${l+plotW*i/data.length}" y="${t}" width="${plotW/data.length}" height="${plotH}" fill="transparent" data-chart-day="${i}" role="button" aria-label="${dateLabel(d.key)}の実績" tabindex="0"/>`).join('');
- root.innerHTML=`<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="日別実績の積み上げ面グラフ">${grid}<path d="${area(lower,baseline)}" fill="#39c5bb" fill-opacity=".28"/><path d="${area(upper,lower)}" fill="#a1d7ee" fill-opacity=".48"/><path d="${path(lower)}" fill="none" stroke="#28afa5" stroke-width="1.5"/><path d="${path(upper)}" fill="none" stroke="#65b5d6" stroke-width="1.5"/>${labels}${hits}</svg>`;
- const select=i=>{const d=data[i];$('chartDetail').textContent=`${dateLabel(d.key)}：ルーティン ${d.routine}pt ／ スポット ${d.spot}pt ／ 合計 ${d.total}pt`;};
- root.querySelectorAll('[data-chart-day]').forEach(el=>{el.addEventListener('click',()=>select(Number(el.dataset.chartDay)));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(Number(el.dataset.chartDay));}});});
+ const initial=Math.max(0,data.findIndex(d=>d.key===localDay()));
+ const selected=initial>=0&&data[initial]?.key===localDay()?initial:data.length-1;
+ const marker=`<line id="chartSelectionLine" x1="${x(selected)}" x2="${x(selected)}" y1="${t}" y2="${t+plotH}" stroke="#168f88" stroke-width="1.3" stroke-dasharray="3 3" pointer-events="none"/><circle id="chartSelectionDot" cx="${x(selected)}" cy="${y(data[selected].total)}" r="3.5" fill="#168f88" pointer-events="none"/>`;
+ const tooltip=`<g id="chartTooltip" visibility="hidden" pointer-events="none"><rect id="chartTipBg" width="146" height="34" rx="6" fill="#E5F8F4" stroke="#B8E8DE"/><text id="chartTipTop" font-size="10" font-weight="600" fill="#347A74"/><text id="chartTipBottom" font-size="9" fill="#347A74"/></g>`;
+ root.innerHTML=`<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="日別実績の積み上げ面グラフ。左右ドラッグで日付を選択">${grid}<path d="${area(lower,baseline)}" fill="#39c5bb" fill-opacity=".28"/><path d="${area(upper,lower)}" fill="#88C9F7" fill-opacity=".42"/><path d="${path(lower)}" fill="none" stroke="#28afa5" stroke-width="1"/><path d="${path(upper)}" fill="none" stroke="#65b5d6" stroke-width="1"/>${labels}${marker}${tooltip}<rect x="${l}" y="${t}" width="${plotW}" height="${plotH}" fill="transparent" id="chartTouchArea" tabindex="0" role="slider" aria-label="グラフの日付を選択" aria-valuemin="1" aria-valuemax="${data.length}" aria-valuenow="${selected+1}" aria-valuetext="${dateLabel(data[selected].key)}"/></svg>`;
+ const svg=root.querySelector('svg'),areaEl=$('chartTouchArea'),line=$('chartSelectionLine'),dot=$('chartSelectionDot'),tip=$('chartTooltip'),tipBg=$('chartTipBg'),tipTop=$('chartTipTop'),tipBottom=$('chartTipBottom');
+ let current=selected,dragging=false;
+ function show(i,visible){current=Math.max(0,Math.min(data.length-1,i));const d=data[current],px=x(current);
+  line.setAttribute('x1',px);line.setAttribute('x2',px);dot.setAttribute('cx',px);dot.setAttribute('cy',y(d.total));
+  areaEl.setAttribute('aria-valuenow',current+1);areaEl.setAttribute('aria-valuetext',dateLabel(d.key));
+  tip.setAttribute('visibility',visible?'visible':'hidden');
+  if(visible){const tx=Math.max(l,Math.min(w-r-146,px-73)),ty=Math.max(2,Math.min(t+plotH-36,y(d.total)-44));
+   tipBg.setAttribute('x',tx);tipBg.setAttribute('y',ty);
+   tipTop.setAttribute('x',tx+7);tipTop.setAttribute('y',ty+13);tipTop.textContent=`${Number(d.key.slice(5,7))}/${Number(d.key.slice(8))}  合計 ${d.total}pt`;
+   tipBottom.setAttribute('x',tx+7);tipBottom.setAttribute('y',ty+26);tipBottom.textContent=`ルーティン ${d.routine}pt / スポット ${d.spot}pt`;
+  }
+ }
+ function fromPointer(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const matrix=svg.getScreenCTM();if(!matrix)return current;const local=pt.matrixTransform(matrix.inverse());return Math.max(0,Math.min(data.length-1,Math.round((local.x-l)*data.length/plotW-.5)));}
+ areaEl.addEventListener('pointerdown',e=>{dragging=true;areaEl.setPointerCapture(e.pointerId);show(fromPointer(e),true);});
+ areaEl.addEventListener('pointermove',e=>{if(dragging)show(fromPointer(e),true);});
+ areaEl.addEventListener('pointerup',e=>{if(dragging){show(fromPointer(e),false);dragging=false;}});
+ areaEl.addEventListener('pointercancel',()=>{dragging=false;show(current,false);});
+ areaEl.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();show(current+(e.key==='ArrowRight'?1:-1),true);}else if(e.key==='Escape'){show(current,false);}});
+ areaEl.addEventListener('blur',()=>show(current,false));
+ $('chartDetail').textContent='';
 }
 $('chartWeek').onclick=()=>{chartMode='week';chartOffset=0;renderChart();};
 $('chartMonth').onclick=()=>{chartMode='month';chartOffset=0;renderChart();};
